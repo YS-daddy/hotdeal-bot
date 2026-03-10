@@ -26,5 +26,7 @@ jobs:
           pip install requests beautifulsoup4
 
       - name: run bot
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
         run: |
           python -u bot.py
