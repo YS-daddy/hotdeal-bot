@@ -1,147 +1,111 @@
 import os
 import requests
-from bs4 import BeautifulSoup
+import xml.etree.ElementTree as ET
 
 TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
 CHAT_ID = "1890536088"
 
-URL = "https://www.fmkorea.com/hotdeal"
+RSS_URL = "https://www.fmkorea.com/hotdeal.rss"
 STATE_FILE = "last_seen.txt"
 
 KEYWORDS = [
     "아이폰",
-    "에어팟",
     "ssd",
-    "갤럭시",
-    "닌텐도",
     "그래픽카드",
+    "에어팟",
+    "닌텐도",
     "특가",
-    "핫딜",
+    "핫딜"
 ]
 
-HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/131.0.0.0 Safari/537.36"
-    ),
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-    "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
-    "Cache-Control": "no-cache",
-    "Pragma": "no-cache",
-    "Referer": "https://www.fmkorea.com/",
-}
+def send_telegram(message):
+    url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
 
-
-def send_telegram(message: str) -> None:
-    api_url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-    response = requests.post(
-        api_url,
+    requests.post(
+        url,
         data={
             "chat_id": CHAT_ID,
             "text": message,
-            "disable_web_page_preview": True,
+            "disable_web_page_preview": True
         },
-        timeout=15,
+        timeout=10
     )
-    print("telegram status:", response.status_code)
-    print("telegram body:", response.text)
 
-
-def load_last_seen() -> str:
+def load_last_seen():
     if os.path.exists(STATE_FILE):
-        with open(STATE_FILE, "r", encoding="utf-8") as f:
+        with open(STATE_FILE, "r") as f:
             return f.read().strip()
     return ""
 
-
-def save_last_seen(post_id: str) -> None:
-    with open(STATE_FILE, "w", encoding="utf-8") as f:
+def save_last_seen(post_id):
+    with open(STATE_FILE, "w") as f:
         f.write(post_id)
 
-
 def fetch_posts():
-    session = requests.Session()
-    session.headers.update(HEADERS)
 
-    response = session.get(URL, timeout=15, allow_redirects=True)
-    print("fmkorea status:", response.status_code)
+    r = requests.get(RSS_URL, timeout=10)
 
-    if response.status_code != 200:
-        send_telegram(f"⚠️ 펨코 접속 실패: status {response.status_code}")
+    if r.status_code != 200:
+        send_telegram(f"⚠️ RSS 접속 실패 {r.status_code}")
         return []
 
-    soup = BeautifulSoup(response.text, "html.parser")
+    root = ET.fromstring(r.text)
 
     posts = []
-    for a_tag in soup.select("a.hotdeal_var8"):
-        title = a_tag.get_text(strip=True)
-        href = a_tag.get("href", "").strip()
 
-        if not title or not href:
-            continue
+    for item in root.findall(".//item"):
 
-        if not href.startswith("/"):
-            continue
-
-        link = "https://www.fmkorea.com" + href
-        post_id = href.split("/")[-1]
+        title = item.find("title").text
+        link = item.find("link").text
+        guid = item.find("guid").text
 
         posts.append({
-            "id": post_id,
+            "id": guid,
             "title": title,
-            "link": link,
+            "link": link
         })
 
     return posts
 
+def filter_posts(posts):
 
-def filter_keyword_posts(posts):
     matched = []
+
     for post in posts:
-        title_lower = post["title"].lower()
-        for keyword in KEYWORDS:
-            if keyword.lower() in title_lower:
+
+        title = post["title"].lower()
+
+        for k in KEYWORDS:
+            if k.lower() in title:
                 matched.append(post)
                 break
+
     return matched
 
-
 def main():
-    print("bot start")
 
     posts = fetch_posts()
+
     if not posts:
-        print("no posts found")
         return
 
-    matched_posts = filter_keyword_posts(posts)
-    print("matched count:", len(matched_posts))
+    matched = filter_posts(posts)
 
-    if not matched_posts:
-        print("no matched keyword posts")
+    if not matched:
         return
 
-    latest_matched = matched_posts[0]
+    latest = matched[0]
+
     last_seen = load_last_seen()
 
-    print("latest matched id:", latest_matched["id"])
-    print("last seen id:", last_seen)
-
-    if latest_matched["id"] == last_seen:
-        print("already sent")
+    if latest["id"] == last_seen:
         return
 
-    message = (
-        "🚨 펨코 핫딜 알림\n\n"
-        f"{latest_matched['title']}\n\n"
-        f"{latest_matched['link']}"
-    )
+    msg = f"🚨 펨코 핫딜\n\n{latest['title']}\n\n{latest['link']}"
 
-    send_telegram(message)
-    save_last_seen(latest_matched["id"])
-    print("sent and saved")
+    send_telegram(msg)
 
+    save_last_seen(latest["id"])
 
 if __name__ == "__main__":
     main()
