@@ -13,23 +13,23 @@ jobs:
       contents: write
 
     steps:
+
       - uses: actions/checkout@v4
 
       - name: install packages
         run: |
-          python --version
-          pip install requests beautifulsoup4
+          pip install requests
 
       - name: run bot
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
         run: |
-          python -u bot.py
+          python bot.py
 
-      - name: commit state file if changed
+      - name: save state
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
           git add last_seen.txt || true
-          git diff --cached --quiet || git commit -m "Update last seen post"
+          git diff --cached --quiet || git commit -m "update state"
           git push
