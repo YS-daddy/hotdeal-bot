@@ -1,52 +1,16 @@
 import requests
-from bs4 import BeautifulSoup
 
 TOKEN = "8473111628:AAHtQaEyPl89VDKMRqMvtPV1pxTWjHFpcEg"
 CHAT_ID = "1890536088"
 
-URL = "https://www.fmkorea.com/hotdeal"
+url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
 
-def send(msg):
+data = {
+    "chat_id": CHAT_ID,
+    "text": "🔥 GitHub에서 보낸 테스트 메시지"
+}
 
-    api=f"https://api.telegram.org/bot{TOKEN}/sendMessage"
+response = requests.post(url, data=data)
 
-    data={
-        "chat_id":CHAT_ID,
-        "text":msg
-    }
-
-    requests.post(api,data=data)
-
-def check_hotdeal():
-
-    headers={"User-Agent":"Mozilla/5.0"}
-
-    r=requests.get(URL,headers=headers)
-
-    soup=BeautifulSoup(r.text,"html.parser")
-
-    posts=soup.select("a.hotdeal_var8")
-
-    if not posts:
-        send("⚠️ 펨코 글 파싱 실패")
-        return
-
-    title=posts[0].text.strip()
-    link="https://www.fmkorea.com"+posts[0]["href"]
-
-    msg=f"""
-🔥 펨코 핫딜 최신글
-
-{title}
-
-{link}
-"""
-
-    send(msg)
-
-
-if __name__=="__main__":
-
-    send("✅ 핫딜봇 정상 실행 테스트")
-
-    check_hotdeal()
+print(response.status_code)
+print(response.text)
