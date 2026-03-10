@@ -9,7 +9,7 @@ url="https://api.telegram.org/bot"+TOKEN+"/sendMessage"
 
 data={
 "chat_id":CHAT_ID,
-"text":"🔥 GitHub 테스트 메시지"
+"text":"github test message"
 }
 
 r=requests.post(url,data=data)
