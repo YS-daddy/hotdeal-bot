@@ -12,8 +12,10 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: install
-        run: pip install requests beautifulsoup4
+      - name: install python packages
+        run: |
+          pip install requests
+          pip install beautifulsoup4
 
       - name: run bot
         run: python bot.py
