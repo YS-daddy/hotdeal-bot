@@ -1,5 +1,4 @@
 import os
-import json
 import requests
 from bs4 import BeautifulSoup
 
@@ -21,7 +20,16 @@ KEYWORDS = [
 ]
 
 HEADERS = {
-    "User-Agent": "Mozilla/5.0"
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/131.0.0.0 Safari/537.36"
+    ),
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+    "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
+    "Cache-Control": "no-cache",
+    "Pragma": "no-cache",
+    "Referer": "https://www.fmkorea.com/",
 }
 
 
@@ -53,9 +61,15 @@ def save_last_seen(post_id: str) -> None:
 
 
 def fetch_posts():
-    response = requests.get(URL, headers=HEADERS, timeout=15)
+    session = requests.Session()
+    session.headers.update(HEADERS)
+
+    response = session.get(URL, timeout=15, allow_redirects=True)
     print("fmkorea status:", response.status_code)
-    response.raise_for_status()
+
+    if response.status_code != 200:
+        send_telegram(f"⚠️ 펨코 접속 실패: status {response.status_code}")
+        return []
 
     soup = BeautifulSoup(response.text, "html.parser")
 
