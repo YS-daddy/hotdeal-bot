@@ -61,6 +61,9 @@ def check():
                 return
 
 if __name__=="__main__":
+
+    send("✅ 핫딜봇 테스트 메시지")
+
     check()
 
 # run
