@@ -7,10 +7,9 @@ url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
 
 data = {
     "chat_id": CHAT_ID,
-    "text": "🔥 GitHub에서 보낸 테스트 메시지"
+    "text": "🔥 GitHub 서버 테스트 메시지"
 }
 
-response = requests.post(url, data=data)
+r = requests.post(url, data=data)
 
-print(response.status_code)
-print(response.text)
+print(r.text)
